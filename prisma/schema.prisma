@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("Kj5JXiYdDTvBD3rS")
+  directUrl = env("Kj5JXiYdDTvBD3rS")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  name           String
+  email          String    @unique
+  password       String
+  profilePic     String?
+  bio            String?   @db.VarChar(500)
+  portfolioUrl   String?
+  skills         String[]
+  contactDisplay Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  jobPosts       JobPost[]
+  messages       Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  jobApplications JobApplication[]
+}
+
+model JobPost {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(200)
+  description     String    @db.VarChar(2000)
+  fileFormat      String
+  budget          Float?
+  deadline        DateTime
+  videoAttachment String[]
+  status          String    @default("open")
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  payments        Payment[]
+  applications    JobApplication[]
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  content     String
+  senderId    Int
+  receiverId  Int
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  status      String   @default("pending")
+  jobPostId   Int
+  jobPost     JobPost  @relation(fields: [jobPostId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JobApplication {
+  id          Int      @id @default(autoincrement())
+  jobPostId   Int
+  userId      Int
+  status      String   @default("pending") // pending, accepted, rejected
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobPost     JobPost  @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([jobPostId, userId])
+}
